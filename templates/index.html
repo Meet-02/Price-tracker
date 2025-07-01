@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+    <div class="form-container">
+        <h1>Track your product price here </h1>
+        <form action="/" method="POST">
+            <div>
+                <label for="URL">URL :-</label>
+                <input type="text" name="URL" placeholder="Enter your url">
+            </div>
+            <div>
+                <label for="email">Email (for updates) :-</label>
+                <input type="email" name="email" placeholder="Enter your Email ">
+            </div>
+            <div>
+                <label for="price">Enter your target price :-</label>
+                <input type="number" name="price" placeholder="Enter price">
+            </div>
+            <div>
+                <button class="t"> Track </button>
+            </div>
+    </div>
+    </form>
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <ul class="alert-box">    
+                {% for message in messages %}
+                <li class="flash-message">{{ message }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    {% endwith %}
+
+
+    <div id="live_status" class="alert"></div>
+    
+    {% if graph %}
+        <h2>Live Price Graph:</h2>
+        <img id="price-graph" src="{{ url_for('static', filename=graph) }}" alt="Price Graph" width="500">
+    {% endif %}
+
+
+</body>
+<script>
+    window.onload = function () {
+      const messages = document.querySelectorAll('.flash-message');
+  
+      messages.forEach((msg) => {
+        setTimeout(() => {
+          msg.style.opacity = '0'; // fade out
+  
+          setTimeout(() => {
+            msg.remove(); // remove from DOM completely
+          }, 500); // match transition time in CSS
+        }, 3000); // show for 3 sec
+      });
+    };
+    
+    setInterval(() => {
+        const graph = document.getElementById('price-graph');
+        if (graph) {
+            graph.src = graph.src.split('?')[0] + '?' + new Date().getTime(); // bust cache
+        }
+    }, 300000); // 5 minutes
+
+    function fetchstatus() {
+        fetch('/updates')
+            .then(res => res.text())
+            .then(data => {
+                document.getElementById('live_status').innerHTML = data;
+            });
+    }
+
+    // Call once on page load
+    fetchstatus();
+
+    // Then call every 5 minutes (300,000 ms)
+    setInterval(fetchstatus, 300000);
+  </script>
+  
+</html>
