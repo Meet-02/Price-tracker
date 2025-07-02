@@ -3,4 +3,5 @@ requests
 beautifulsoup4
 matplotlib
 python-dotenv
+gunicorn
 
