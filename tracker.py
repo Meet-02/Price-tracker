@@ -22,7 +22,7 @@ user_agents = [
     "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:89.0)"
 ]
 
-check_interval_seconds = 21600 #  Check every 6 hours (21600 seconds)
+check_interval_seconds = 14400  #  Check every 4 hours (14400 seconds)
 
 email_sent = False
 products = []  # List of dicts: {url, target_price, email, last_checked_price, etc.}
@@ -40,8 +40,14 @@ def home():
 
     if request.method=='POST':
         url = request.form.get('URL')
+
+        if not ('amazon.in' in url or 'flipkart.com' in url):
+            flash("❌ This website is not supported yet. Please enter an Amazon or Flipkart URL.")
+            return render_template('index.html')
+
         email=request.form.get('email')
         target_price = float(request.form.get('price'))
+
 
         products.append({
             "url": url,
@@ -112,11 +118,11 @@ def check_price(product):
             soup = BeautifulSoup(response.content, 'html.parser')
 
             price_az = soup.find("span", {"class": "a-offscreen"})# use as it can work even after the class changed of price tag on offical page of given url
-            price_my = soup.find("span", {"class": "pdp-price"} and soup.find("span", {"class": "pdp-price"}).find("strong"))
             price_fl = soup.find("div", {"class": "Nx9bqj CxhGGd"})
             
 
-            price_tag = price_az or price_fl or price_my
+            price_tag = price_az or price_fl
+
 
             if price_tag:
                 price_text = price_tag.text.strip().replace('₹', '').replace(',', '')

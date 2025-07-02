@@ -69,7 +69,7 @@
         if (graph) {
             graph.src = graph.src.split('?')[0] + '?' + new Date().getTime(); // bust cache
         }
-    }, 300000); // 5 minutes
+    }, 14400000); // 4 hours
 
     function fetchstatus() {
         fetch('/updates')
