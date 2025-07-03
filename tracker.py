@@ -36,18 +36,14 @@ def home():
     if request.method == 'POST':
         url = request.form.get('URL')
         email = request.form.get('email')
-        try:
-            target_price = float(request.form.get('price'))
-        except ValueError:
-            flash("❌ Please enter a valid numeric price.")
-            return render_template('index.html')
+        target_price = float(request.form.get('price'))
 
-        # Only allow Amazon or Flipkart
+        # Validate supported URL
         if not ('amazon.in' in url or 'flipkart.com' in url):
             flash("❌ This website is not supported yet. Please enter an Amazon or Flipkart URL.")
-            return render_template('index.html')
+            return render_template('index.html')  # Clean form again
 
-        # Register new product
+        # Add product for tracking
         products.append({
             "url": url,
             "email": email,
@@ -55,16 +51,16 @@ def home():
             "history": []
         })
 
-        flash("✅ Tracking started. You'll be notified below if price drops.")
+        flash("✅ Tracking started. You'll be notified here if price drops.")
 
-        user_updates[email] = f"✅ Tracking started at {time.strftime('%H:%M:%S')} on {time.strftime('%Y-%m-%d')}."
-
+        # Show user's own chart path
         safe_email = email.replace('@', '_at_').replace('.', '_')
         graph_path = f"{safe_email}_price_graph.png"
+        return render_template('index.html', graph=graph_path)
 
-        return render_template('index.html', graph=graph_path, email=email)
+    # For GET request (fresh user): always show a clean page
+    return render_template('index.html', graph=None)
 
-    return render_template('index.html')
 
 def send_email(email, message):
     port = 465
