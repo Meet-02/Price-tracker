@@ -26,10 +26,6 @@ check_interval_seconds = 14400  # 4 hours
 products = []
 user_updates = {}  # Dictionary to store updates per user
 
-@app.route('/updates')
-def live_updates():
-    email = request.args.get("email")
-    return user_updates.get(email, "🔄 No updates yet. Please wait for the first price check.")
 
 @app.route('/', methods=['GET', 'POST'])
 def home():
