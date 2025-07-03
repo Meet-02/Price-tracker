@@ -71,19 +71,6 @@
         }
     }, 14400000); // 4 hours
 
-    function fetchstatus() {
-        fetch('/updates')
-            .then(res => res.text())
-            .then(data => {
-                document.getElementById('live_status').innerHTML = data;
-            });
-    }
-
-    // Call once on page load
-    fetchstatus();
-
-    // Then call every 5 minutes (300,000 ms)
-    setInterval(fetchstatus, 300000);
   </script>
   
 </html>
