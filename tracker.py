@@ -1,16 +1,23 @@
-from flask import Flask, render_template, flash, request, send_from_directory
-import smtplib, ssl, os, requests, threading, time, random
+from flask import Flask, render_template, flash, request, send_file
+import smtplib, ssl
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-from bs4 import BeautifulSoup
+import requests
 from dotenv import load_dotenv
+import os
+from bs4 import BeautifulSoup
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+import random
+import threading
+import time
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key_here'
+
 load_dotenv()
+EMAIL_PASSWORD = os.getenv("Email_password")
 
 user_agents = [
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
@@ -19,8 +26,21 @@ user_agents = [
 ]
 
 check_interval_seconds = 14400  # 4 hours
-products = []  # All tracking items
+products = []  # List of dicts
 update_list = ""
+
+@app.route('/updates')
+def live_updates():
+    return update_list
+
+@app.route('/graph/<email>')
+def get_graph(email):
+    safe_email = email.replace('@', '_at_').replace('.', '_')
+    filepath = f'/tmp/{safe_email}_price_graph.png'
+    if os.path.exists(filepath):
+        return send_file(filepath, mimetype='image/png')
+    else:
+        return "Graph not found", 404
 
 @app.route('/', methods=['GET', 'POST'])
 def home():
@@ -29,11 +49,17 @@ def home():
     if request.method == 'POST':
         url = request.form.get('URL')
         email = request.form.get('email')
-        target_price = float(request.form.get('price'))
+        price = request.form.get('price')
+
+        if not url or not email or not price:
+            flash("❌ All fields are required.")
+            return render_template('index.html')
 
         if not ('amazon.in' in url or 'flipkart.com' in url):
-            flash("❌ This website is not supported yet. Please enter an Amazon or Flipkart URL.")
+            flash("❌ Only Amazon and Flipkart URLs are supported.")
             return render_template('index.html')
+
+        target_price = float(price)
 
         products.append({
             "url": url,
@@ -47,32 +73,13 @@ def home():
 
         return render_template('index.html', email=email)
 
-    # For GET request: show clean form
+    # GET request — fresh form
     return render_template('index.html')
 
-
-@app.route('/graph/<email>')
-def get_graph(email):
-    safe_email = email.replace('@', '_at_').replace('.', '_')
-    filename = f"{safe_email}_price_graph.png"
-    filepath = f"/tmp/{filename}"
-
-    if not os.path.exists(filepath):
-        return "Graph not found", 404
-
-    return send_from_directory("/tmp", filename)
-
-
-@app.route('/updates')
-def live_updates():
-    return update_list
-
-
 def send_email(email, message):
+    sender_email = "meetmourya04@gmail.com"
     port = 465
     smtp_server = "smtp.gmail.com"
-    sender_email = "meetmourya04@gmail.com"
-    password = os.getenv("Email_password")
 
     msg = MIMEMultipart()
     msg['Subject'] = "🔔 Price Alert"
@@ -82,11 +89,10 @@ def send_email(email, message):
 
     context = ssl.create_default_context()
     with smtplib.SMTP_SSL(smtp_server, port, context=context) as server:
-        server.login(sender_email, password)
+        server.login(sender_email, EMAIL_PASSWORD)
         server.sendmail(sender_email, email, msg.as_string())
 
     print(f"✅ Email sent to {email}")
-
 
 def check_price(product):
     global update_list
@@ -104,48 +110,45 @@ def check_price(product):
 
     for attempt in range(3):
         try:
-            time.sleep(random.uniform(3, 6))
+            time.sleep(random.uniform(2, 4))
             response = requests.get(url, headers=headers)
             soup = BeautifulSoup(response.content, 'html.parser')
 
             price_az = soup.find("span", {"class": "a-offscreen"})
             price_fl = soup.find("div", {"class": "Nx9bqj CxhGGd"})
+
             price_tag = price_az or price_fl
 
             if price_tag:
                 price_text = price_tag.text.strip().replace('₹', '').replace(',', '')
                 if not price_text:
-                    print(f"⚠ Empty price text on attempt {attempt + 1}.")
-                    time.sleep(2)
                     continue
-
                 current_price = float(price_text)
-                product["history"].append((time.strftime('%H:%M:%S'), current_price))
+
+                timestamp = time.strftime('%H:%M:%S')
+                product["history"].append((timestamp, current_price))
                 update_price_chart(product["history"], email)
 
+                update_list = f"✅ Checked at {timestamp} — ₹{current_price}"
+
                 if current_price <= target_price:
-                    update_list = f"✅ Checked at {time.strftime('%H:%M:%S')} — ₹{current_price}\n📢 Price has dropped! ✅"
-                    message = f"Your product price has dropped to ₹{current_price} at {time.strftime('%H:%M:%S')}."
+                    message = f"Your product has dropped to ₹{current_price} at {timestamp}."
                     send_email(email, message)
-                else:
-                    update_list = f"✅ Checked at {time.strftime('%H:%M:%S')} — ₹{current_price}\n⏳ Price is still high."
                 return
             else:
-                print(f"⚠ Attempt {attempt + 1}: Price not found.")
-                time.sleep(2)
+                print(f"⚠ Attempt {attempt + 1}: Price tag not found. Retrying...")
+                time.sleep(1)
 
         except Exception as e:
             print(f"❌ Attempt {attempt + 1} failed: {e}")
-            time.sleep(2)
+            time.sleep(1)
 
     print("❌ All attempts failed. Skipping this check.")
 
-
-def update_price_chart(price_history, email):
-    if not price_history:
+def update_price_chart(history, email):
+    if not history:
         return
-
-    times, prices = zip(*price_history)
+    times, prices = zip(*history)
     plt.figure(figsize=(8, 4))
     plt.plot(times, prices, marker='o')
     plt.title('Price History')
@@ -158,7 +161,7 @@ def update_price_chart(price_history, email):
     filepath = f'/tmp/{safe_email}_price_graph.png'
     plt.savefig(filepath)
     plt.close()
-
+    print(f"📈 Graph saved to {filepath}")
 
 def price_check_loop():
     while True:
@@ -169,8 +172,7 @@ def price_check_loop():
         else:
             time.sleep(5)
 
-
-# Start tracking loop in background
+# Start background checker
 threading.Thread(target=price_check_loop, daemon=True).start()
 
 if __name__ == '__main__':
