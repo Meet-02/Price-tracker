@@ -67,6 +67,7 @@ def home():
 
         update_price_chart(product["history"], email)  # Generate graph initially
 
+
         return render_template('index.html', email=email, graph=True)
 
     return render_template('index.html')
@@ -122,6 +123,7 @@ def check_price(product):
                 current_price = float(price_text)
                 timestamp = time.strftime('%H:%M:%S')
                 product["history"].append((timestamp, current_price))
+                print(f"✅ Saving graph for {email}")
                 update_price_chart(product["history"], email)
 
                 if current_price <= target_price:
@@ -155,6 +157,7 @@ def update_price_chart(price_history, email):
 
     safe_email = email.replace('@', '_at_').replace('.', '_')
     filepath = f"/tmp/{safe_email}_price_graph.png"
+    print("Saving graph to:", filepath)
     plt.savefig(filepath)
     plt.close()
 
