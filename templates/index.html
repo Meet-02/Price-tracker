@@ -42,10 +42,11 @@
 
     <div id="live_status" class="alert"></div>
     
-    {% if graph %}
+    {% if email %}
         <h2>Live Price Graph:</h2>
-        <img id="price-graph" src="/graph/{{ email }}" alt="Price Graph" width="500">
+        <img id="price-graph" src="{{ url_for('get_graph', email=email) }}" alt="Price Graph" width="500">
     {% endif %}
+
 
 
 </body>

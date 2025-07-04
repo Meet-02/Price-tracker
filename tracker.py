@@ -50,13 +50,10 @@ def home():
 
         flash("✅ Tracking started. You'll be notified here if price drops.")
 
-        # Show user's own chart path
-        safe_email = email.replace('@', '_at_').replace('.', '_')
-        graph_path = f"{safe_email}_price_graph.png"
         return render_template('index.html', email=email)
-
-    # For GET request (fresh user): always show a clean page
-    return render_template('index.html', graph=None)
+    
+    # ✅ GET request — fresh page with no user data
+    return render_template('index.html')
 
 
 def send_email(email, message):
