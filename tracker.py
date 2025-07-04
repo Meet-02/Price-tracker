@@ -146,9 +146,12 @@ def check_price(product):
 
     print("❌ All attempts failed.")
 
+import tempfile
+
 def update_price_chart(price_history, email):
     if not price_history:
         return
+
     times, prices = zip(*price_history)
     plt.figure(figsize=(8, 4))
     plt.plot(times, prices, marker='o')
@@ -159,10 +162,16 @@ def update_price_chart(price_history, email):
     plt.tight_layout()
 
     safe_email = email.replace('@', '_at_').replace('.', '_')
-    filepath = f"/tmp/{safe_email}_price_graph.png"
-    print("Saving graph to:", filepath)
+
+    # Ensure tmp directory exists
+    tmp_dir = "/tmp"
+    os.makedirs(tmp_dir, exist_ok=True)
+
+    filepath = os.path.join(tmp_dir, f"{safe_email}_price_graph.png")
+    print(f"✅ Saving graph to: {filepath}")
     plt.savefig(filepath)
     plt.close()
+
 
 def price_check_loop():
     while True:
