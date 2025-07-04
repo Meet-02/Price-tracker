@@ -68,8 +68,6 @@ def home():
         flash("✅ Tracking started. You'll be notified here if price drops.")
         update_list = f"✅ Tracking started at {time.strftime('%H:%M:%S')} on {time.strftime('%Y-%m-%d')}."
 
-        update_price_chart(product["history"], email)  # Generate graph initially
-
         check_price(product)
         return render_template('index.html', email=email, graph=True)
 
