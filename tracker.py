@@ -34,12 +34,12 @@ def live_updates():
 @app.route('/graph/<email>')
 def serve_graph(email):
     safe_email = email.replace('@', '_at_').replace('.', '_')
-    filepath = os.path.join('/tmp', f"{safe_email}_price_graph.png")
-    if not os.path.exists(filepath):
-        print(f"❌ Graph file not found at: {filepath}")
+    path = f"/tmp/{safe_email}_price_graph.png"
+    if not os.path.exists(path):
+        print(f"❌ Graph file not found at: {path}")
         return "Graph not found", 404
-    
-    return send_file(filepath, mimetype='image/png')
+    return send_file(path, mimetype='image/png')
+
 
 
 

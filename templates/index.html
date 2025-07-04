@@ -40,11 +40,11 @@
     {% endwith %}
 
 
-    <div id="live_status" class="alert"></div>
+    <!-- <div id="live_status" class="alert"></div> -->
     
     {% if graph %}
         <h2>Live Price Graph:</h2>
-        <img id="price-graph" src="/graph/{{ email }}" alt="Price Graph" width="500" onerror="this.style.display='none';">
+        <img id="price-graph" src="/graph/{{ email }}" alt="Price Graph" width="500" >      
     {% endif %}
 
 
