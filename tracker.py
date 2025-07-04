@@ -100,7 +100,10 @@ def check_price(product):
 
     headers = {
         "User-Agent": random.choice(user_agents),
-        "Accept-Language": "en-US,en;q=0.9"
+        "Accept-Language": "en-US,en;q=0.9",
+        "Accept-Encoding": "gzip, deflate, br",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9",
+        "Connection": "keep-alive"
     }
 
     for attempt in range(3):
