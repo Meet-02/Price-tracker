@@ -30,15 +30,18 @@ update_list = ""
 def live_updates():
     return update_list
 
+
 @app.route('/graph/<email>')
-def get_graph(email):
+def serve_graph(email):
     safe_email = email.replace('@', '_at_').replace('.', '_')
-    filepath = f"/tmp/{safe_email}_price_graph.png"
-    if os.path.exists(filepath):
-        return send_file(filepath, mimetype='image/png')
-    else:
-        print(f"❌ Graph file not found at: {filepath}")
+    graph_path = f"/tmp/{safe_email}_price_graph.png"
+
+    if not os.path.exists(graph_path):
+        print(f"❌ Graph file not found at: {graph_path}")
         return "Graph not found", 404
+
+    return send_file(graph_path, mimetype='image/png')
+
 
 
 @app.route('/', methods=['GET', 'POST'])
