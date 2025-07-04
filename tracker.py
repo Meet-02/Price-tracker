@@ -37,7 +37,9 @@ def get_graph(email):
     if os.path.exists(filepath):
         return send_file(filepath, mimetype='image/png')
     else:
+        print(f"❌ Graph file not found at: {filepath}")
         return "Graph not found", 404
+
 
 @app.route('/', methods=['GET', 'POST'])
 def home():
@@ -65,7 +67,7 @@ def home():
 
         update_price_chart(product["history"], email)  # Generate graph initially
 
-        return render_template('index.html', email=email)
+        return render_template('index.html', email=email, graph=True)
 
     return render_template('index.html')
 
