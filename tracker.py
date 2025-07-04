@@ -34,13 +34,13 @@ def live_updates():
 @app.route('/graph/<email>')
 def serve_graph(email):
     safe_email = email.replace('@', '_at_').replace('.', '_')
-    graph_path = f"/tmp/{safe_email}_price_graph.png"
-
-    if not os.path.exists(graph_path):
-        print(f"❌ Graph file not found at: {graph_path}")
+    filepath = os.path.join('/tmp', f"{safe_email}_price_graph.png")
+    if not os.path.exists(filepath):
+        print(f"❌ Graph file not found at: {filepath}")
         return "Graph not found", 404
+    
+    return send_file(filepath, mimetype='image/png')
 
-    return send_file(graph_path, mimetype='image/png')
 
 
 
@@ -169,6 +169,8 @@ def update_price_chart(price_history, email):
 
     filepath = os.path.join(tmp_dir, f"{safe_email}_price_graph.png")
     print(f"✅ Saving graph to: {filepath}")
+    print("✅ Saved chart:", os.path.exists(filepath))
+
     plt.savefig(filepath)
     plt.close()
 
