@@ -44,9 +44,8 @@
     
     {% if graph %}
         <h2>Live Price Graph:</h2>
-        <img id="price-graph" src="/graph/{{ email }}" alt="Price Graph" width="500" >      
+        <img id="price-graph" src="{{ url_for('serve_graph', email=email) }}" alt="Price Graph" width="500">
     {% endif %}
-
 
 
 
