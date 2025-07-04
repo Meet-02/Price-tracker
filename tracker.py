@@ -6,6 +6,7 @@ import requests
 from dotenv import load_dotenv
 import os
 from bs4 import BeautifulSoup
+from flask import send_file
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -52,7 +53,7 @@ def home():
         # Show user's own chart path
         safe_email = email.replace('@', '_at_').replace('.', '_')
         graph_path = f"{safe_email}_price_graph.png"
-        return render_template('index.html', graph=graph_path)
+        return render_template('index.html', email=email)
 
     # For GET request (fresh user): always show a clean page
     return render_template('index.html', graph=None)
@@ -143,9 +144,18 @@ def update_price_chart(price_history, email):
     plt.tight_layout()
 
     safe_email = email.replace('@', '_at_').replace('.', '_')
-    filepath = f'static/{safe_email}_price_graph.png'
+    filepath = f'/tmp/{safe_email}_price_graph.png'
     plt.savefig(filepath)
     plt.close()
+
+@app.route('/graph/<email>')
+def get_graph(email):
+    safe_email = email.replace('@', '_at_').replace('.', '_')
+    filepath = f"/tmp/{safe_email}_price_graph.png"
+    if os.path.exists(filepath):
+        return send_file(filepath, mimetype='image/png')
+    else:
+        return "Graph not found", 404
 
 def price_check_loop():
     while True:
