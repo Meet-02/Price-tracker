@@ -70,7 +70,7 @@ def home():
 
         update_price_chart(product["history"], email)  # Generate graph initially
 
-
+        check_price(product)
         return render_template('index.html', email=email, graph=True)
 
     return render_template('index.html')
