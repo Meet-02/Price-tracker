@@ -40,7 +40,9 @@
     {% endwith %}
 
 
-    <!-- <div id="live_status" class="alert"></div> -->
+    {% if email %}
+        <div id="live_status" class="alert"></div>
+    {% endif %}
     
     {% if graph %}
         <h2>Live Price Graph:</h2>
@@ -71,6 +73,16 @@
             graph.src = graph.src.split('?')[0] + '?' + new Date().getTime(); // bust cache
         }
     }, 14400000); // 4 hours
+
+    function fetchLiveUpdate() {
+      fetch('/updates/{{ email }}')
+        .then(res => res.text())
+        .then(data => {
+          document.getElementById('live_status').innerText = data;
+        });
+    }
+    fetchLiveUpdate();
+    setInterval(fetchLiveUpdate, 14400000);  // every 4 hours
 
   </script>
   

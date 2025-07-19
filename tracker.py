@@ -1,4 +1,4 @@
-from flask import Flask, render_template, flash, request, send_file
+from flask import Flask, render_template, flash, request, send_file,session
 import smtplib, ssl
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -11,25 +11,47 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import random
 import threading
+import tempfile
 import time
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key_here'
 
 user_agents = [
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)",
-    "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:89.0)"
+    # Chrome - Windows
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36",
+
+    # Chrome - macOS
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 13_0_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.5735.91 Safari/537.36",
+
+    # Chrome - Android
+    "Mozilla/5.0 (Linux; Android 13; Pixel 6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.5615.136 Mobile Safari/537.36",
+
+    # Firefox - Linux
+    "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:117.0) Gecko/20100101 Firefox/117.0",
+
+    # Firefox - Windows
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:119.0) Gecko/20100101 Firefox/119.0",
+
+    # Edge - Windows
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.5938.62 Safari/537.36 Edg/117.0.2045.31",
+
+    # Safari - macOS
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 12_6) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.6 Safari/605.1.15",
+
+    # Safari - iPhone
+    "Mozilla/5.0 (iPhone; CPU iPhone OS 16_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.4 Mobile/15E148 Safari/604.1",
+
+    # Brave - Android
+    "Mozilla/5.0 (Linux; Android 10; SM-A205F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Mobile Safari/537.36",
+
+    # Samsung Browser
+    "Mozilla/5.0 (Linux; Android 12; SM-G991B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.45 Mobile Safari/537.36 SamsungBrowser/16.0"
 ]
 
 check_interval_seconds = 14400  # 4 hours
 products = []
-update_list = ""
-
-@app.route('/updates')
-def live_updates():
-    return update_list
-
+user_updates = {}
 
 @app.route('/graph/<email>')
 def serve_graph(email):
@@ -40,13 +62,12 @@ def serve_graph(email):
         return "Graph not found", 404
     return send_file(path, mimetype='image/png')
 
-
-
-
+@app.route('/updates/<email>')
+def live_updates(email):
+    return user_updates.get(email, '')
 
 @app.route('/', methods=['GET', 'POST'])
 def home():
-    global update_list
     if request.method == 'POST':
         url = request.form.get('URL')
         email = request.form.get('email')
@@ -64,14 +85,15 @@ def home():
         }
 
         products.append(product)
+        user_updates[email] = f"✅ Tracking started at {time.strftime('%H:%M:%S')} on {time.strftime('%Y-%m-%d')}."
+        check_price(product)
 
         flash("✅ Tracking started. You'll be notified here if price drops.")
-        update_list = f"✅ Tracking started at {time.strftime('%H:%M:%S')} on {time.strftime('%Y-%m-%d')}."
-
-        check_price(product)
         return render_template('index.html', email=email, graph=True)
 
     return render_template('index.html')
+
+
 
 def send_email(email, message):
     load_dotenv()
@@ -93,7 +115,7 @@ def send_email(email, message):
     print(f"✅ Email sent to {email}")
 
 def check_price(product):
-    global update_list
+
     url = product["url"]
     target_price = product["target_price"]
     email = product["email"]
@@ -102,6 +124,8 @@ def check_price(product):
         "User-Agent": random.choice(user_agents),
         "Accept-Language": "en-US,en;q=0.9",
         "Accept-Encoding": "gzip, deflate, br",
+        "Referer": "https://www.google.com/",
+        "DNT": "1",
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9",
         "Connection": "keep-alive"
     }
@@ -131,11 +155,11 @@ def check_price(product):
                 update_price_chart(product["history"], email)
 
                 if current_price <= target_price:
-                    update_list = f"✅ Checked at {timestamp} — ₹{current_price}. Price dropped! ✅"
+                    user_updates[email] = f"✅ Checked at {timestamp} — ₹{current_price}. Price dropped! ✅"
                     message = f"Your product price dropped to ₹{current_price} at {timestamp}"
                     send_email(email, message)
                 else:
-                    update_list = f"✅ Checked at {timestamp} — ₹{current_price}. Still waiting ⏳"
+                    user_updates[email] = f"✅ Checked at {timestamp} — ₹{current_price}. Still waiting ⏳"
                 return
             else:
                 print(f"⚠ Attempt {attempt + 1}: Couldn't find price. Retrying...")
@@ -147,7 +171,7 @@ def check_price(product):
 
     print("❌ All attempts failed.")
 
-import tempfile
+
 
 def update_price_chart(price_history, email):
     if not price_history:
